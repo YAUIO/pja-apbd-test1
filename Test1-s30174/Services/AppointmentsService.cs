@@ -57,9 +57,9 @@ public class AppointmentsService : IAppointmentsService
                         },
                         AppointmentServices = new List<AppointmentServiceGet>()
                     };
-                
+
                 if (ret == null) throw new NullReferenceException();
-                
+
                 ret.AppointmentServices.Add(new AppointmentServiceGet
                 {
                     Name = reader.GetString("name"),
@@ -67,8 +67,69 @@ public class AppointmentsService : IAppointmentsService
                 });
                 i++;
             }
+
             if (ret == null) throw new KeyNotFoundException();
             return ret;
         }
+    }
+
+    public async Task<int> AddAppointment(AppointmentPost request)
+    {
+        await using var connection = new SqlConnection(_connectionString);
+        {
+            await connection.OpenAsync();
+            
+            var getPatient = new SqlCommand("select p.patient_id from patient p where p.patient_id = @pwz", connection);
+            getPatient.Parameters.AddWithValue("@pwz", request.PWZ);
+            var p_id = (int?) await getPatient.ExecuteScalarAsync();
+            if (p_id == null) throw new KeyNotFoundException("Patient not found");
+
+
+            var getDoctor = new SqlCommand("select d.doctor_id from doctor d where d.pwz = @pwz", connection);
+            getDoctor.Parameters.AddWithValue("@pwz", request.PWZ);
+            var d_id = (int?) await getDoctor.ExecuteScalarAsync();
+
+            if (d_id == null) throw new KeyNotFoundException("Doctor not found");
+            
+            var insertAppointment = new SqlCommand(
+                """
+                        INSERT INTO Appointment
+                        VALUES 
+                        (@a_id, @p_id, @d_id, current_date)
+                """
+                , connection);
+
+            insertAppointment.Parameters.AddWithValue("@a_id", request.AppointmentId);
+            insertAppointment.Parameters.AddWithValue("@p_id", request.PatientId);
+            insertAppointment.Parameters.AddWithValue("@d_id", d_id);
+                    
+            var app = await insertAppointment.ExecuteScalarAsync();
+
+            if (app == null) throw new KeyNotFoundException("Invalid appointment data");
+
+            foreach (var serv in request.Services)
+            {
+                var getService = new SqlCommand("select s.service_id from service s where s.name = @name", connection);
+                var s_id = (int?)await getService.ExecuteScalarAsync();
+                if (s_id == null) throw new KeyNotFoundException("No such service");
+                
+                var insertAppointmentService = new SqlCommand(
+                    """
+                            INSERT INTO Appointment_Service
+                            VALUES 
+                            (@a_id, @s_id, @s_fee)
+                    """
+                    , connection);
+
+                insertAppointmentService.Parameters.AddWithValue("@a_id", request.AppointmentId);
+                insertAppointmentService.Parameters.AddWithValue("@s_id", s_id);
+                insertAppointmentService.Parameters.AddWithValue("@s_fee",serv.ServiceFee);
+
+                var appServ = await insertAppointment.ExecuteScalarAsync();
+
+                if (appServ == null) throw new KeyNotFoundException("Invalid service data");
+            }
+        }
+        return request.AppointmentId;
     }
 }

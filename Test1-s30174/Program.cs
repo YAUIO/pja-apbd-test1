@@ -15,7 +15,7 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddControllers();
-        
+
         builder.Services.AddScoped<IAppointmentsService, AppointmentsService>();
 
         var app = builder.Build();
@@ -26,8 +26,6 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
-        app.UseHttpsRedirection();
 
         app.UseAuthorization();
 
