@@ -5,5 +5,5 @@ public class AppointmentPost
     public int AppointmentId { set; get; }
     public int PatientId { set; get; }
     public string PWZ { set; get; }
-    public List<AppointmentServiceGet> Services { set; get; }
+    public List<AppointmentServicePost> Services { set; get; }
 }

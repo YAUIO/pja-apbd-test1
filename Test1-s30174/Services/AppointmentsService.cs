@@ -79,8 +79,8 @@ public class AppointmentsService : IAppointmentsService
         {
             await connection.OpenAsync();
             
-            var getPatient = new SqlCommand("select p.patient_id from patient p where p.patient_id = @pwz", connection);
-            getPatient.Parameters.AddWithValue("@pwz", request.PWZ);
+            var getPatient = new SqlCommand("select p.patient_id from patient p where p.patient_id = @pid", connection);
+            getPatient.Parameters.AddWithValue("@pid", request.PatientId);
             var p_id = (int?) await getPatient.ExecuteScalarAsync();
             if (p_id == null) throw new KeyNotFoundException("Patient not found");
 
@@ -95,13 +95,14 @@ public class AppointmentsService : IAppointmentsService
                 """
                         INSERT INTO Appointment
                         VALUES 
-                        (@a_id, @p_id, @d_id, current_date)
+                        (@a_id, @p_id, @d_id,@date)
                 """
                 , connection);
 
             insertAppointment.Parameters.AddWithValue("@a_id", request.AppointmentId);
             insertAppointment.Parameters.AddWithValue("@p_id", request.PatientId);
             insertAppointment.Parameters.AddWithValue("@d_id", d_id);
+            insertAppointment.Parameters.AddWithValue("@date", DateTime.Now);
                     
             var app = await insertAppointment.ExecuteScalarAsync();
 
