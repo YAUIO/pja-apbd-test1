@@ -19,13 +19,15 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            return Ok(_service.GetAppointmentById(id));
+            return Ok(await _service.GetAppointmentById(id));
         }
         catch (KeyNotFoundException e)
         {
+            return NotFound(e.Message);
         }
         catch (Exception e)
         {
+            return StatusCode(500, e.Message);
         }
     }
 }
